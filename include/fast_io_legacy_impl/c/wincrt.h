@@ -39,14 +39,14 @@ struct
 #endif
 ucrt_iobuf
 {
-    char*	     _ptr;
-    char*            _base;
-    int              _cnt;
-    long             _flag;
-    long             _file;
-    int              _charbuf;
-    int              _bufsiz;
-    char*            _tmpfname;
+	char*	         _ptr;
+	char*            _base;
+	int              _cnt;
+	long             _flag;
+	long             _file;
+	int              _charbuf;
+	int              _bufsiz;
+	char*            _tmpfname;
 };
 
 #endif
@@ -317,7 +317,7 @@ inline char* wincrt_fp_read_cold_impl(FILE* __restrict fpp,char* first,std::size
 		return posix_read_impl(static_cast<int>(fp->_file),first,diff);
 #else
 		::fast_io::posix_io_observer piob{static_cast<int>(fp->_file)};
-		return ::fast_io::operations::decay::read_some_decay(piob,first,first+diff);
+		return ::fast_io::operations::decay::read_some_decay(piob,first,first+diff).ptr;
 #endif
 	}
 	else
@@ -337,7 +337,7 @@ inline char* wincrt_fp_read_cold_impl(FILE* __restrict fpp,char* first,std::size
 		::std::size_t readed;
 		{
 			::fast_io::posix_io_observer piob{static_cast<int>(fp->_file)};
-			readed=static_cast<::std::size_t>(::fast_io::operations::decay::read_some_decay(piob,fp->_base,fp->_base+fp->_bufsiz)-fp->_base);
+			readed=static_cast<::std::size_t>(::fast_io::operations::decay::read_some_decay(piob,fp->_base,fp->_base+fp->_bufsiz).ptr-fp->_base);
 		}
 #endif
 		fp->_cnt=static_cast<int>(static_cast<unsigned int>(readed));
@@ -372,7 +372,7 @@ inline bool wincrt_fp_underflow_impl(FILE* __restrict fpp)
 	::std::size_t size;
 	{
 		::fast_io::posix_io_observer piob{static_cast<int>(fp->_file)};
-		size=static_cast<::std::size_t>(::fast_io::operations::decay::read_some_decay(piob,fp->_base,fp->_base+fp->_bufsiz)-fp->_base);
+		size=static_cast<::std::size_t>(::fast_io::operations::decay::read_some_decay(piob,fp->_base,fp->_base+fp->_bufsiz).ptr-fp->_base);
 	}
 #endif
 	fp->_ptr=fp->_base;
@@ -516,13 +516,15 @@ inline void obuffer_overflow(basic_c_io_observer_unlocked<char_type> ciob,char_t
 }
 
 template<::std::integral char_type>
-inline ::std::byte* read_some_bytes_underflow_define(
+inline rw_some_result<::std::byte> read_some_bytes_underflow_define(
 ::fast_io::basic_c_io_observer_unlocked<char_type> ciob,
 ::std::byte* first,::std::byte* last)
 {
-	return ::fast_io::details::wincrt_fp_read_cold_impl(ciob.fp,
+	auto ptr{::fast_io::details::wincrt_fp_read_cold_impl(ciob.fp,
 		reinterpret_cast<char*>(first),
-		reinterpret_cast<char*>(last));
+		reinterpret_cast<char*>(last))};
+	auto eof{ ptr == reinterpret_cast<char*>(first) ? true : false };
+	return {ptr,eof};
 }
 
 template<::std::integral char_type>

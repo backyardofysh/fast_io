@@ -112,7 +112,7 @@ template<typename instmtype>
 #if __has_cpp_attribute(__gnu__::__cold__)
 [[__gnu__::__cold__]]
 #endif
-inline constexpr ::std::byte* pread_some_bytes_cold_impl(instmtype insm,::std::byte *first,::std::byte *last,::fast_io::intfpos_t off)
+inline constexpr rw_some_result<::std::byte> pread_some_bytes_cold_impl(instmtype insm,::std::byte *first,::std::byte *last,::fast_io::intfpos_t off)
 {
 	using char_type = typename instmtype::input_char_type;
 	if constexpr(::fast_io::operations::decay::defines::has_pread_some_bytes_underflow_define<instmtype>)
@@ -154,13 +154,13 @@ inline constexpr ::std::byte* pread_some_bytes_cold_impl(instmtype insm,::std::b
 	else if constexpr(::fast_io::operations::decay::defines::has_pread_all_bytes_underflow_define<instmtype>)
 	{
 		pread_all_bytes_underflow_define(insm,first,last,off);
-		return last;
+		return {last,true};
 	}
 	else if constexpr(::fast_io::operations::decay::defines::has_scatter_pread_all_bytes_underflow_define<instmtype>)
 	{
 		io_scatter_t sc{first,static_cast<::std::size_t>(last-first)};
 		scatter_pread_all_bytes_underflow_define(insm,__builtin_addressof(sc),1,off);
-		return last;
+		return {last,true};
 	}
 	else if constexpr(sizeof(char_type)==1&&
 		::fast_io::operations::decay::defines::has_pread_all_underflow_define<instmtype>)
@@ -174,14 +174,14 @@ inline constexpr ::std::byte* pread_some_bytes_cold_impl(instmtype insm,::std::b
 		pread_all_underflow_define(insm,
 			reinterpret_cast<char_type_ptr>(first),
 			reinterpret_cast<char_type_ptr>(last),off);
-		return last;
+		return {last,true};
 	}
 	else if constexpr(sizeof(char_type)==1&&
 		::fast_io::operations::decay::defines::has_scatter_pread_all_underflow_define<instmtype>)
 	{
 		io_scatter_t sc{first,static_cast<::std::size_t>(last-first)};
 		scatter_pread_all_bytes_underflow_define(insm,__builtin_addressof(sc),1,off);
-		return last;
+		return {last,true};
 	}
 	else if constexpr(::fast_io::operations::decay::defines::has_input_or_io_stream_seek_bytes_define<instmtype>&&
 	(
@@ -426,7 +426,7 @@ inline constexpr void pread_all_impl(instmtype insm,
 }
 
 template<typename instmtype>
-inline constexpr ::std::byte* pread_some_bytes_impl(instmtype insm,::std::byte *first,::std::byte *last,::fast_io::intfpos_t off)
+inline constexpr rw_some_result<::std::byte> pread_some_bytes_impl(instmtype insm,::std::byte *first,::std::byte *last,::fast_io::intfpos_t off)
 {
 	if constexpr(::fast_io::operations::decay::defines::has_input_or_io_stream_mutex_ref_define<instmtype>)
 	{
